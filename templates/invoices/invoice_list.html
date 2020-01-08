@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+
+
+
+<h3>Invoices List</h3>
+<div class="row mt-5">
+    <div class="col-md-12">
+ <ul class="list-group">
+        {% for invoice in object_list %}
+            {% if not invoice.is_paid %}
+                <li class="list-group-item d-flex justify-content-between list-group-item-action bg-warning text-white">
+            {% else %}
+                <li class="list-group-item d-flex justify-content-between list-group-item-action">
+            {% endif %}
+
+        
+        <a href="{% url 'invoice_detail' invoice.id %}">{{invoice}}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+</div>
+
+{% endblock %}
+
+
+<form class="mt-5" action="{% url 'patient_search_results' %}" method="get">
+    <input name="q" type="text" placeholder="Search...">
+  </form>
+
+  
+<a href="{% url 'clinicmanagement:create_invoice' %}" class="float">
+    <i class="fa fa-plus my-float"></i>
+    </a>

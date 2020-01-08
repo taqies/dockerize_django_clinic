@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row"></div>
+
+<div class="row"></div>
+<div class="row lead">
+    <div class="col-md-6">
+        <h3>
+            <i class="fa fa-user-circle-o" aria-hidden="true"></i>
+            Patient's Details</h3>
+    </div>
+    <div class="col-md-6">
+        <a href="{% url 'update_patient' patient.id %}" class="btn-xl text-white btn-circle btn-primary"><i class="fa fa-pencil " aria-hidden="true"></i>
+        </a>
+    </div>
+    <div class="col-md-6 mt-4">
+        <p>First Name: {{patient.first_name}}</p>
+    </div>
+    <div class="col-md-6 mt-4">
+        <p>Last Name: {{patient.last_name}}</p>
+    </div>
+    <div class="col-md-12">
+        <p>DOB: {{patient.date_of_birth}}</p>
+    </div>
+    <div class="col-md-12">
+        <p>Address: {{patient.address}}, {{patient.address_line_2}}, {{patient.county}}, {{patient.eircode}}</p>
+    </div>
+    <div class="col-md-12">
+        <p>Contact Number: {{patient.contact_number}}</p>
+    </div>
+    <div class="col-md-12">
+        <p>Email: {{patient.email}}</p>
+    </div>
+    <div class="col-md-12">
+        <p>GP Name: {{patient.GP_name}}</p>
+    </div>
+    <div class="col-md-12">
+        <p>GP Address: {{patient.GP_address}}</p>
+    </div>
+    
+
+</div>
+<div class="row my-4" id="list_record">
+{% if perms.clinicmanagement.view_record %}
+    {% if patient_record_list %}
+    
+    <div class="col-md-7 mt-4">
+        <div class="row justify-content-center">
+        <h4 class="mx-5">
+            <i class="fa fa-id-badge" aria-hidden="true"></i>
+            Patient's Record 
+        </h4>
+        <a href="{% url 'create_record' object.id %}">
+            <i class="fa fa-plus-square-o fa-2x text-primary" aria-hidden="true"></i>
+            </a>
+            <a href="{% url 'list_records' object.id %}">
+                <i class="fa fa-list fa-2x text-primary mx-2" aria-hidden="true"></i>
+            </a>
+    </div>
+    <ul class="list-group">
+        {% for record in patient_record_list %}
+        <li class="list-group-item d-flex justify-content-between list-group-item-action">
+            <a href="{% url 'patient_record' patient.id record.id %}">{{record}}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    </div>
+    {% endif %}
+{% endif %}
+
+{% if patient_invoices_list %}
+<div class="col-md-5 mt-4">
+    <div class="row justify-content-center">
+<h4 class="mx-4">        
+    <i class="fa fa-id-card" aria-hidden="true"></i>
+    Patient's Invoice
+</h4>
+    <a href="{% url 'create_invoice' object.id %}">
+        <i class="fa fa-plus-square-o fa-2x text-primary" aria-hidden="true"></i>
+        </a>
+        <a href="{% url 'patient_invoice_list' object.id %}">
+            <i class="fa fa-list fa-2x text-primary mx-2" aria-hidden="true"></i>
+            </a>
+
+</div>
+    <ul class="list-group">
+        {% for invoice in patient_invoices_list %}
+            {% if not invoice.is_paid %}
+                <li class="list-group-item d-flex justify-content-between list-group-item-action bg-warning text-white">
+            {% else %}
+                <li class="list-group-item d-flex justify-content-between list-group-item-action">
+            {% endif %}
+
+        
+        <a href="{% url 'invoice_detail' invoice.id %}">{{invoice}}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    </div>
+{% endif%}
+</div>
+
+<a href="{% url 'create_record' object.id %}" class="float">
+    <i class="fa fa-plus my-float"></i>
+    </a>
+
+
+{% endblock %}

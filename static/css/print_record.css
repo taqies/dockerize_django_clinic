@@ -1,0 +1,31 @@
+
+/*
+
+print media
+*/
+
+@media print {
+    #sidebar, #invoice_nav, #print_button, form {
+        display:none;
+    }    
+    @page {
+        size: A4; /* DIN A4 standard, Europe */
+        margin:0;
+        margin-top: 20mm;
+      }
+      html, body {
+        font-family: 'Alegreya';
+        font-size: 15px;
+          width: 210mm;
+          /* height: 297mm; */
+          height: 297mm;
+          background: #FFF;
+          overflow:visible;
+      }
+      body {
+          padding-top:20mm;
+          padding-left: 25mm;         
+      }
+
+ }
+
