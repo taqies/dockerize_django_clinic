@@ -38,8 +38,31 @@
     <div class="col-md-12">
         <p>GP Address: {{patient.GP_address}}</p>
     </div>
-    
 
+</div>
+<div class="row justify-content-center" id="list-maternity">
+    {% if perms.clinicmanagement.view_maternity %}
+    <div class="col-md-12 my-2 bg-success btn text-white">
+        <i class="fa fa-user-plus" aria-hidden="true"></i>
+            Maternity Data
+        <button class="btn btn-circle ml-5"><a href="{% url 'create_maternity' object.id %}"><i class="fa fa-plus text-success" aria-hidden="true"></i>
+
+        </a></button>
+    </div>
+    
+    {% if maternity_list %}
+    <ul class="list-group col-md-12">
+        {% for record in maternity_list %}
+        <li class="list-group-item d-flex justify-content-between list-group-item-action maternity">
+            <a href="{% url 'maternity_detail' patient.id record.id %}">{{record}}</a>
+            <div class="gestation_value" style="display:none">{{record.get_gestation_period}}</div>
+        </li>
+        {% endfor %}
+    </ul>
+    </div>
+
+    {% endif %}
+    {% endif %}
 </div>
 <div class="row my-4" id="list_record">
 {% if perms.clinicmanagement.view_record %}
@@ -69,12 +92,11 @@
     {% endif %}
 {% endif %}
 
-{% if patient_invoices_list %}
 <div class="col-md-5 mt-4">
     <div class="row justify-content-center">
 <h4 class="mx-4">        
     <i class="fa fa-id-card" aria-hidden="true"></i>
-    Patient's Invoice
+    Patient's Invoices
 </h4>
     <a href="{% url 'create_invoice' object.id %}">
         <i class="fa fa-plus-square-o fa-2x text-primary" aria-hidden="true"></i>
@@ -98,12 +120,26 @@
         {% endfor %}
     </ul>
     </div>
-{% endif%}
 </div>
 
 <a href="{% url 'create_record' object.id %}" class="float">
     <i class="fa fa-plus my-float"></i>
     </a>
 
+    <script>
+        payment_due_weeks = ['10','11','12','13','14','18','19','20','21','28','29','30','31','33','34','35','36'];
+        var due = document.querySelector('.gestation_value').textContent;
+        var found = payment_due_weeks.includes(due);
+        console.log(found)
+        console.log(due)
+        if (found){
+            
+            var root = document.querySelector('.maternity');
+            console.log(root)
+            root.setAttribute('class','bg-warning list-group-item d-flex justify-content-between list-group-item-action maternity');
+        }
+        
+    </script>
 
 {% endblock %}
+

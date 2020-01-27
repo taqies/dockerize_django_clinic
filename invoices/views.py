@@ -22,6 +22,8 @@ from clinicmanagement.models import Patient
 
 class InvoiceListView(LoginRequiredMixin, ListView):
     model = Invoice
+    paginate_by = 20
+    ordering ='-created_on'
 
 
 
@@ -32,7 +34,7 @@ class PatientInvoiceListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         object_list = Invoice.objects.filter(
             Q(patient__pk=self.kwargs.get('pk'))
-        )
+        ).order_by('-created_on')
         return object_list
 
 class DetailInvoice (LoginRequiredMixin, ModelFormMixin, DetailView):

@@ -1,5 +1,6 @@
 import uuid
 
+from dateutil import rrule
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import User
@@ -138,3 +139,51 @@ class Record(models.Model):
 
     def get_absolute_url(self):
         return reverse('patient_record', kwargs={'pk':self.patient.pk,'pk_r': self.pk})
+
+def weeks_between(start_date, end_date):
+        weeks = rrule.rrule(rrule.WEEKLY, dtstart=start_date, until=end_date)
+        return weeks.count()
+
+class Maternity(models.Model):
+    patient = models.ForeignKey(Patient, on_delete = models.SET_NULL, null = True, blank = True, related_name="maternity")    
+    MRN = models.CharField(max_length=10)
+    gestation_on_date_entered = models.IntegerField(default=0, null=True)
+    estimated_due_date = models.DateField("due date")
+    is_delivered = models.BooleanField(default=False)
+    delivered_on = models.DateTimeField('delivered_on',null=True, blank=True)
+    created_date = models.DateTimeField("date created", auto_now_add=True)
+
+    
+    def __str__(self):
+        return "Maternity Data of {0}, MRN No: {3}, estimated due date on {1}, currenty on week {2} ".format(str(self.patient),self.estimated_due_date.strftime('%d/%m/%Y'),self.get_gestation_period(),str(self.MRN))
+
+    def get_absolute_url(self):
+        return reverse('maternity_detail', kwargs={'pk':self.patient.pk,'pk_m': self.pk})
+
+    
+
+    def get_gestation_period(self):
+        current_gestation = weeks_between(self.created_date,timezone.now())
+        return current_gestation+ self.gestation_on_date_entered-1
+
+
+#########################################################################################
+#
+##
+#
+#########################################################################################
+
+def user_directory_path(instance, filename):
+    return '{0}/{1}'.format(instance.patient.id, filename)
+
+class Investigation(models.Model):
+    patient = models.ForeignKey(Patient,  on_delete = models.SET_NULL, null = True, blank = True, related_name="investigation")
+    investigation_file = models.FileField(upload_to=user_directory_path)
+    created_date = models.DateTimeField("date_created", auto_now_add=True)
+    description = models.CharField(max_length = 50)
+
+    def __str__(self):
+        return "Investigation file of {0}, uploaded on {1}, description {2}".format(str(self.patient), self.created_date.strftime('%d%m%Y'), self.description)
+
+    def get_absolute_url(self):
+        return reverse('investigation_patient', kwargs={'pk':self.patient.pk, 'pk_i':self.pk})

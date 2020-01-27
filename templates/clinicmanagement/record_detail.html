@@ -15,7 +15,7 @@
             Patient's Record</a></h3>
         </div>
             <div class="col-md-6">
-                  <a href="{% url 'update_record' object.patient.id object.id %}" class="btn-xl text-white btn-circle btn-primary"><i class="fa fa-pencil " aria-hidden="true"></i>
+                  <a href="{% url 'update_record' object.patient.id object.id %}" class="btn-xl text-white btn-circle btn-primary non_print"><i class="fa fa-pencil " aria-hidden="true"></i>
                   </a>
               </div>
         <div class="col-md-12 text-uppercase">
@@ -90,10 +90,12 @@
           </div>
 </div>
 
-<button class="btn btn-primary" onclick=window.print()><i class="fa fa-print" aria-hidden="true"></i>
+<button class="btn btn-primary non_print" onclick=window.print()><i class="fa fa-print" aria-hidden="true"></i>
       Print</button>
 
-
+<a href="{% url 'print_record' object.patient.id object.id %}"><button class="btn btn-success non_print pill" ><i class="fa fa-print" aria-hidden="true"></i>
+            Print GP Letter</button>
+      </a>
 <a href="{% url 'create_invoice' object.patient.id %}" class="float">
         <i class="fa fa-plus my-float"></i>
 </a>

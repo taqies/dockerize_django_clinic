@@ -17,17 +17,25 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required
+
 
 # Create your views here.
 from django.http import HttpResponse
 
-from .models import Patient, Record
-from .forms import PatientForm, RecordForm
+from .models import Patient, Record, Maternity
+from .forms import PatientForm, RecordForm, MaternityForm
 from invoices.models import Invoice
 from invoices.forms import InvoiceForm
 
+################################################################################################
+#
+#               Patient Section
+#
+################################################################################################
+
 class PatientListView(LoginRequiredMixin, ListView):
-    paginate_by = 10
+    paginate_by = 50
     model = Patient
     template_name = 'clinicmanagement/patient_list_view.html'
     queryset = Patient.objects.all().order_by('last_name')  # Default: Model.objects.all()
@@ -57,7 +65,9 @@ class PatientDetailView(LoginRequiredMixin, DetailView):
         context['patient_invoices_list'] = Invoice.objects.filter(
             Q(patient__pk=self.object.id)
         ).order_by('-created_on')[:10]
-        
+        context['maternity_list'] = Maternity.objects.filter(
+            Q(patient_id=self.object.id)
+        ).order_by('-created_date')[:10]
         return context
 
     def get_object(self):
@@ -87,8 +97,13 @@ class UpdatePatient(LoginRequiredMixin,RevisionMixin, UpdateView):
             'contact_number', 'GP_name', 'GP_address'
             ]
 
-#############################################################
-#       Create Invoice
+##########################################################################################
+#
+#                Create Invoice
+#
+##########################################################################################
+
+
 class CreateInvoice(LoginRequiredMixin, CreateView):
     model = Invoice
     form_class = InvoiceForm
@@ -106,8 +121,12 @@ class CreateInvoice(LoginRequiredMixin, CreateView):
         form.instance.patient = Patient.objects.get(id=self.kwargs.get('pk'))
         return super().form_valid(form)
 
-#############################################################
+###############################################################################
+#
 #        Patient Record Actions
+#
+###############################################################################
+
 
 class RecordListView(PermissionRequiredMixin,  ListView):
     permission_required = (
@@ -122,6 +141,16 @@ class RecordListView(PermissionRequiredMixin,  ListView):
         ).order_by('-date_of_clinic')
         return object_list
 
+
+class AllRecordList(PermissionRequiredMixin,  ListView):
+    permission_required = (
+        'clinicmanagement.view_record'
+         )
+    paginate_by = 40
+    queryset = Record.objects.order_by('-date_of_clinic')
+    context_object_name = 'record_list'
+    template_name = 'clinicmanagement/allrecord_list.html'
+         
 
 
 class PatientRecordDetailView(PermissionRequiredMixin, DetailView):
@@ -182,11 +211,43 @@ class PatientRecordSearchResultsView(LoginRequiredMixin, ListView):
     pk_url_kwarg = 'pk_r'
 
 
-TOP_MARGIN=1.5 *  inch
-BOTTOM_MARGIN = 1 * inch
+TOP_MARGIN=1.7 *  inch
+BOTTOM_MARGIN = 1.5 * inch
+
+#########################################################################################
+#
+#           Create Maternity Patient
+#
+#########################################################################################
+
+class MaternityList(LoginRequiredMixin,ListView):
+    model = Maternity
+    paginate_by = 40
+    queryset = Maternity.objects.order_by('-created_date')
+    context_object_name = 'maternity_list'
+
+class CreateMaternity(PermissionRequiredMixin,RevisionMixin,CreateView):
+    permission_required= 'clinicmanagement.add_maternity'
+    form_class = MaternityForm 
+    template_name = 'clinicmanagement/maternity_form.html'
+    
+    def form_valid(self, form):
+        form.instance.patient = Patient.objects.get(id=self.kwargs.get('pk'))
+        return super(CreateMaternity,self).form_valid(form)
 
 
-def get_record(request,pk):
+class MaternityPatient(LoginRequiredMixin,DetailView):
+    model = Maternity
+    pk_url_kwarg = 'pk_m'
+
+
+#######################################################################################
+#
+#           Printing Patient Record for GP
+#
+#######################################################################################
+@login_required
+def print_record(request, pk, pk_r):
     record = get_object_or_404(Record, pk=pk_r)
     buffer = io.BytesIO()
     styles = getSampleStyleSheet()
@@ -200,6 +261,8 @@ def get_record(request,pk):
     ##data need for report
     name = record.patient.first_name +' '+ record.patient.last_name
     date_of_birth = record.patient.date_of_birth.strftime("%d-%m-%Y")
+    patient_address = record.patient.address
+    patient_county = record.patient.county
     date_of_clinic = record.date_of_clinic.strftime("%d-%m-%Y")
     referral_indication = record.referral_indication
     #medical_history = record.medical_history
@@ -213,6 +276,11 @@ def get_record(request,pk):
     gp_name = record.patient.GP_name
     gp_address = record.patient.GP_address
 
+    patient_name_filename = record.patient.first_name +'_'+ record.patient.last_name
+    date_of_clinic_filename = record.date_of_clinic.strftime("%Y%m%d")
+    date_of_birth_filename = record.patient.date_of_birth.strftime("%d%m%Y")
+
+
     story = []
 
     #add some flowables
@@ -222,17 +290,69 @@ def get_record(request,pk):
 
     #add spacer
     story.append(spacer)
+    title='Assessment of {0} dated {1}'.format(name,date_of_clinic)
 
-    re_title = "Re: "+name+"'s DOB: "+ date_of_birth+" visits to my clinic on "+ date_of_clinic
+  #  re_title = "Re: "+name+"'s DOB: "+ date_of_birth+" visits to my clinic on "+ date_of_clinic
+    re_title = 'Re: <u> {0}; DOB: {1}; Address: {2},{3}.</u>'.format(name,date_of_birth,patient_address,patient_county)
+    opening = 'Thank you for referring the above lady with:'
+    dear = 'Dear {0},'.format(gp_name)
 
+    assessment = '<u>Assessment in clinic dated {0}</u>'.format(date_of_clinic)
+
+    heading_further_plan = '<u>Further Plan:</u>'
+    heading_current_symptoms = '<u>Current Symptoms</u>'
+    heading_investigations_to_date = '<b>Investigations</b>'
+    heading_examination_today ='<b>Examinations</b>'
+
+    regards = 'Regards,'
+    dr_name = 'Dr Azy Khalid'
+    specialist = 'Consultant Obsterician & Gynaecologist'
+    imc = 'IMC: 245424'
 
     #add diagnosis
     story.append(Paragraph(re_title, styleH))
+    story.append(Paragraph(dear, styleH))
+    story.append(Paragraph(opening,styleH))
+
+    story.append(Paragraph(referral_indication,styleH))
+    story.append(spacer)
+
+    story.append(Paragraph(heading_current_symptoms, styleH))
+    story.append(Paragraph(current_symptoms, styleH))
+
+
+    story.append(spacer)
+    story.append(Paragraph(assessment, styleH))  
+
+    story.append(Paragraph(heading_investigations_to_date, styleH))    
+    story.append(Paragraph(investigations_to_date, styleH))
+
+    story.append(Paragraph(heading_examination_today, styleH))
+    story.append(Paragraph(examination_today, styleH))
+
+    story.append(spacer)
+    story.append(Paragraph(heading_further_plan,styleH))
+    story.append(Paragraph(further_plan,styleH))
+
+    story.append(spacer)
+    story.append(spacer)
+
+    story.append(Paragraph(regards, styleH))
+
+    story.append(spacer)
+    story.append(spacer)
+    story.append(spacer)
+
+    story.append(Paragraph(dr_name, styleH))
+    story.append(Paragraph(specialist, styleH))
+    story.append(Paragraph(imc, styleH))
+
 
     
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin= TOP_MARGIN, bottomMargin=BOTTOM_MARGIN)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin= TOP_MARGIN, bottomMargin=BOTTOM_MARGIN,title=title, author=dr_name)
     
     doc.build(story)
     buffer.seek(0)
+    file_name = '{0}_{1}_DOB_{2}.pdf'.format(date_of_clinic_filename,patient_name_filename,date_of_birth_filename)
 
-    return FileResponse(buffer, as_attachment=True, filename='hello0.pdf')
+    return FileResponse(buffer, as_attachment=True, filename=file_name)
