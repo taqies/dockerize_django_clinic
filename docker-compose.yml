@@ -12,7 +12,7 @@ services:
       - media_volume:/app/media
       - ./django_clinic:/app
     expose:
-      - 8000                                                                        
+      - 8000                                                                     
     env_file:
       - ./django_clinic/.env
 
